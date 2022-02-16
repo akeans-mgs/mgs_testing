@@ -1,9 +1,11 @@
 import "@babel/polyfill";
 import dotenv from "dotenv";
 import "isomorphic-fetch";
-import createShopifyAuth, { verifyRequest } from "@shopify/koa-shopify-auth";
+import createShopifyAuth from "@shopify/koa-shopify-auth";
+import { receiveWebhook } from "@shopify/koa-shopify-webhooks";
 import Shopify, { ApiVersion } from "@shopify/shopify-api";
 import Koa from "koa";
+
 import next from "next";
 import Router from "koa-router";
 
@@ -75,7 +77,16 @@ app.prepare().then(async () => {
 				ctx.redirect(`/online/auth/?shop=${shop}`);
 		  	},
 		})
+	);
 
+	server.use(
+		receiveWebhook({
+			path: '/webhook/gdpr/shop_redact',
+			secret: process.env.SHOPIFY_API_SECRET,
+			onReceived(ctx) {
+				console.log("received webhook: ", ctx.state.webhook);
+			},
+		})
 	);
 
 	const handleRequest = async (ctx) => {
@@ -103,10 +114,6 @@ app.prepare().then(async () => {
 		} catch (error) {
 			console.log(`Failed to process webhook: ${error}`);
 		}
-	});
-
-	router.post("/graphql",verifyRequest({ returnHeader: true, authRoute: "/online/auth" }),async (ctx, next) => {
-		await Shopify.Utils.graphqlProxy(ctx.req, ctx.res);
 	});
 
 	router.get("(/_next/static/.*)", handleRequest); // Static content is clear
