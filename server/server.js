@@ -82,7 +82,7 @@ app.prepare().then(async () => {
 	server.use(
 		receiveWebhook({
 			path: '/webhook/gdpr/shop_redact',
-			secret: process.env.SHOPIFY_API_SECRET,
+			secret: process.env.SHOPIFY_API_SECRET || '123456',
 			onReceived(ctx) {
 				console.log("received webhook: ", ctx.state.webhook);
 			},
